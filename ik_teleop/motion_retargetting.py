@@ -89,6 +89,7 @@ class AllegroRetargetingOptimizer:
         #self.pub.publish(self.create_pose_array_msg())
 
         self.calculate_finger_angles('index', self.finger_coords['index'], self.finger_coords['metacarpals'])
+        self.calculate_thumb_angles(self.finger_coords['thumb'])
         # self.get_keypoint_difference()
 
         # self.align_hand_to_robot()
@@ -306,28 +307,28 @@ class AllegroRetargetingOptimizer:
 
 
 
-    def calculate_thumb_angles(self, thumb_joint_coords, curr_angles, moving_avg_arr):
+    def calculate_thumb_angles(self, thumb_joint_coords):
 
+        time.sleep(0.1)
         calc_finger_angles = []
         # joint 1
         angle = self.calculate_joint_1_angle(thumb_joint_coords)
         print(f"angle1 {angle}")
         angle -= 2.3
-        # print(f"angle1 {angle}")
-        # time.sleep(0.1)
+        print(f"angle1 {angle}")
         calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[1])
         
         # joint 2
         angle = self.calculate_joint_2_angle(thumb_joint_coords)
         angle += 0.2
-        # print(f"angle2 {angle}")
+        print(f"angle2 {angle}")
         calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[2])
 
 
         # joint 3
         angle = self.calculate_joint_3_angle(thumb_joint_coords)
         angle -= 0.2
-        # print(f"angle3 {angle}")
+        print(f"angle3 {angle}")
         calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[3])
         
         angle = -calculate_angle_z(
@@ -338,12 +339,10 @@ class AllegroRetargetingOptimizer:
         # angle = 0.263
         # angle = 1.396
         angle += 2.8
-        # print(f"angle0 {angle}")
+        print(f"angle0 {angle}")
         calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[0])
 
-        filtered_angles = self._get_filtered_thumb_angles("thumb", calc_finger_angles, curr_angles, moving_avg_arr)
-        # print(f"filtered_angles {filtered_angles}")
-        return filtered_angles
+        return calc_finger_angles
 
     def run(self):
         try:
