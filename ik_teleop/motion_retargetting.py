@@ -87,9 +87,10 @@ class AllegroRetargetingOptimizer:
         self.pub_marker.publish(self.create_marker_array_msg(1,0,0))
         self.pub.publish(self.create_pose_array_msg())
 
-        self.get_keypoint_difference()
+        self.calculate_finger_angles(self.finger_coords['index'])
+        # self.get_keypoint_difference()
 
-        self.align_hand_to_robot()
+        # self.align_hand_to_robot()
 
         self.pub_marker_mod.publish(self.create_marker_array_msg(0,1,0))
         self.pub_mod.publish(self.create_pose_array_msg())
@@ -212,7 +213,7 @@ class AllegroRetargetingOptimizer:
     def orientation_to_array(self, orientation):
         return np.array([orientation.x, orientation.y, orientation.z, orientation.w])
 
-    def calculate_finger_angles(self, finger_type, finger_joint_coords, metacarpals_coords, curr_angles, moving_avg_arr):
+    def calculate_finger_angles(self, finger_type, finger_joint_coords, metacarpals_coords):
         if finger_type == 'index':
             idx = 1
         elif finger_type == 'middle':
@@ -226,10 +227,10 @@ class AllegroRetargetingOptimizer:
             finger_joint_coords[1],
             finger_joint_coords[3]
         )
-        print(f"finger_joint_coords {finger_joint_coords}")
 
-        angle * self.linear_scaling_factors[idx]
-        return angle * self.linear_scaling_factors[idx]
+        angle = angle * self.linear_scaling_factors[idx]
+        print(f"finger_type {finger_type}, angle {angle}")
+        return angle
 
     def calculate_joint_1_angle(self, thumb_joint_coords):
 
