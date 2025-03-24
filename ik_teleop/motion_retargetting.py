@@ -34,7 +34,7 @@ class AllegroRetargetingOptimizer:
             pass
 
 
-        rospy.Subscriber('/hand_tracking/joint_poses', PoseArray, callback=self._get_XR_joints_poses, queue_size=1)
+        rospy.Subscriber('/hand_tracking/left/joint_poses', PoseArray, callback=self._get_XR_joints_poses, queue_size=1)
         self.pub_mod = rospy.Publisher('/hand_tracking/keypoints_transformed', PoseArray, queue_size=10)
         self.pub_marker_mod = rospy.Publisher('/hand_tracking/marker_keypoints_transformed', MarkerArray, queue_size=10)
         self.pub = rospy.Publisher('/hand_tracking/keypoints', PoseArray, queue_size=10)
