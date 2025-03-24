@@ -316,20 +316,20 @@ class AllegroRetargetingOptimizer:
         print(f"angle1 {angle}")
         angle -= 2.3
         print(f"angle1 {angle}")
-        calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[1])
+        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[1])
         
         # joint 2
         angle = self.calculate_joint_2_angle(thumb_joint_coords)
         angle += 0.2
         print(f"angle2 {angle}")
-        calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[2])
+        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[2])
 
 
         # joint 3
         angle = self.calculate_joint_3_angle(thumb_joint_coords)
         angle -= 0.2
         print(f"angle3 {angle}")
-        calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[3])
+        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[3])
         
         angle = -calculate_angle_z(
             [1.0,0.0,0.0],
@@ -340,7 +340,7 @@ class AllegroRetargetingOptimizer:
         # angle = 1.396
         angle += 2.8
         print(f"angle0 {angle}")
-        calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[0])
+        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[0])
 
         return calc_finger_angles
 
