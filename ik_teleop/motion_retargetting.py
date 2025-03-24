@@ -92,8 +92,8 @@ class AllegroRetargetingOptimizer:
 
         # self.align_hand_to_robot()
 
-        self.pub_marker_mod.publish(self.create_marker_array_msg(0,1,0))
-        self.pub_mod.publish(self.create_pose_array_msg())
+        # self.pub_marker_mod.publish(self.create_marker_array_msg(0,1,0))
+        # self.pub_mod.publish(self.create_pose_array_msg())
 
     def create_pose_array_msg(self):
         pose_array_msg = PoseArray()
