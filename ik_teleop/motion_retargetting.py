@@ -82,12 +82,13 @@ class AllegroRetargetingOptimizer:
             ring = self.finger_coords_array_np[OCULUS_JOINTS['ring']],
             little = self.finger_coords_array_np[OCULUS_JOINTS['little']],
             thumb = self.finger_coords_array_np[OCULUS_JOINTS['thumb']],
+            metacarpals = self.finger_coords_array_np[OCULUS_JOINTS['metacarpals']],
         )
         
-        self.pub_marker.publish(self.create_marker_array_msg(1,0,0))
-        self.pub.publish(self.create_pose_array_msg())
+        #self.pub_marker.publish(self.create_marker_array_msg(1,0,0))
+        #self.pub.publish(self.create_pose_array_msg())
 
-        self.calculate_finger_angles(self.finger_coords['index'])
+        self.calculate_finger_angles('index', self.finger_coords['index'], self.finger_coords['metacarpals'])
         # self.get_keypoint_difference()
 
         # self.align_hand_to_robot()
@@ -195,6 +196,7 @@ class AllegroRetargetingOptimizer:
             index=self.finger_coords_array_np[OCULUS_JOINTS['index']],
             middle=self.finger_coords_array_np[OCULUS_JOINTS['middle']],
             ring=self.finger_coords_array_np[OCULUS_JOINTS['ring']],
+            metacarpals=self.finger_coords_array_np[OCULUS_JOINTS['metacarpals']],
         )
         # Update finger orientation dictionary
         self.finger_orientations = dict(
@@ -203,6 +205,7 @@ class AllegroRetargetingOptimizer:
             index=self.finger_orientation_array_np[OCULUS_JOINTS['index']],
             middle=self.finger_orientation_array_np[OCULUS_JOINTS['middle']],
             ring=self.finger_orientation_array_np[OCULUS_JOINTS['ring']],
+            metacarpals=self.finger_coords_array_np[OCULUS_JOINTS['metacarpals']],
         )
 
         
