@@ -17,7 +17,7 @@ class AllegroHandOperator:
                 rospy.init_node('allegro_hand_operator')
             except rospy.ROSInterruptException:
                 pass
-        self._transformed_hand_keypoint_subscriber = rospy.Subscriber('/quest/keypoints_transformed', PoseArray, callback=self._get_joints_poses, queue_size=1)
+        self._transformed_hand_keypoint_subscriber = rospy.Subscriber('/hand_tracking/keypoints_transformed', PoseArray, callback=self._get_joints_poses, queue_size=1)
         JOINT_COUNT = 26
         # Initializing the  finger configs
         self.finger_configs = finger_configs

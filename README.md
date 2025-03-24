@@ -26,6 +26,7 @@ git clone https://github.com/kopiotrek/Allegro-Hand-Teleoperation.git
 ```bash
 echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 echo "export PYTHONPATH=$HOME/ros_ws/Allegro-Hand-Teleoperation:\$PYTHONPATH" >> ~/.bashrc
+# echo "export PYTHONPATH=$HOME/ros_ws/ik_teleop:\$PYTHONPATH" >> ~/.bashrc
 echo "export PYTHONPATH=\$PYTHONPATH:/opt/ros/noetic/lib/python3/dist-packages" >> ~/.bashrc
 source ~/.bashrc
 ```

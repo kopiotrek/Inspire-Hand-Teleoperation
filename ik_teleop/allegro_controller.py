@@ -1,16 +1,12 @@
-import concurrent.futures
-import signal
-import sys
 import rospy
 import os
 import numpy as np
 from copy import copy
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseArray
-import multiprocessing
+from std_srvs.srv import Trigger
 import time
 
-JOINT_STATE_TOPIC = "/allegroHand/joint_states"
 
 class AllegroController:
     def __init__(self):
@@ -30,12 +26,10 @@ class AllegroController:
 
         self.joint_comm_publisher = rospy.Publisher('/allegroHand/joint_cmd', JointState, queue_size=1)
         self.joint_comm_delta_publisher = rospy.Publisher('/kth_franka_plant/in/allegro_cmd', JointState, queue_size=1)
-        rospy.Subscriber(JOINT_STATE_TOPIC, JointState, self._sub_callback_joint_state)
-        rospy.Subscriber('/quest/keypoints_transformed', PoseArray, self._callback_knuckle_coordinates, queue_size=1)
-        rospy.Subscriber('/allegroHand/index/joint_cmd_delta', JointState, self._sub_callback_index_delta_cmd)
-        rospy.Subscriber('/allegroHand/middle/joint_cmd_delta', JointState, self._sub_callback_middle_delta_cmd)
-        rospy.Subscriber('/allegroHand/ring/joint_cmd_delta', JointState, self._sub_callback_ring_delta_cmd)
-        rospy.Subscriber('/allegroHand/thumb/joint_cmd_delta', JointState, self._sub_callback_thumb_delta_cmd)
+        rospy.wait_for_service('/inspire_hand/get_angle_act')
+        self.get_angle_service = rospy.ServiceProxy('/inspire_hand/get_angle_act', Trigger)
+        self.current_joint_state = self.parse_joint_state(self.get_angle_service().message)
+        rospy.Subscriber('/hand_tracking/keypoints_transformed', PoseArray, self._callback_knuckle_coordinates, queue_size=1)
 
         rospy.Subscriber('/kth_franka_plant/in/allegro_cmd', JointState, self._sub_callback_delta_cmd)
         rospy.loginfo(f'{self.node_name}: Initialized!')
@@ -91,6 +85,7 @@ class AllegroController:
 
     def _sub_callback_delta_cmd(self, data):
         cmd_delta_joint_state = data.position
+        self.current_joint_state = self.parse_joint_state(self.get_angle_service().message)
         current_angles = self.current_joint_state.position
 
         desired_angles = np.array(cmd_delta_joint_state) + np.array(current_angles)

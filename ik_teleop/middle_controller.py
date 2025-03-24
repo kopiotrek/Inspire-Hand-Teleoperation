@@ -14,8 +14,8 @@ import time
 
 
 # List of all ROS Topics
-XR_KEYPOINTS_TOPIC = '/quest/keypoints_transformed' 
-PAUSE_TELEOP_TOPIC = '/quest/pause' 
+XR_KEYPOINTS_TOPIC = '/hand_tracking/keypoints_transformed' 
+PAUSE_TELEOP_TOPIC = '/hand_tracking/pause' 
 JOINT_STATE_TOPIC = '/allegroHand/joint_states' 
 COMM_JOINT_STATE_TOPIC = '/allegroHand/commanded_joint_states' 
 JOINT_COMM_TOPIC = '/allegroHand/joint_cmd'
