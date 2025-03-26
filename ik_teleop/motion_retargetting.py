@@ -3,6 +3,7 @@
 import rospy
 from tf2_msgs.msg import TFMessage
 from geometry_msgs.msg import PoseArray, Pose
+from std_msgs.msg import Int32MultiArray
 from tf.transformations import quaternion_matrix, quaternion_from_matrix
 from xml.etree import ElementTree as ET
 import numpy as np
@@ -39,6 +40,8 @@ class AllegroRetargetingOptimizer:
         self.pub_marker_mod = rospy.Publisher('/hand_tracking/marker_keypoints_transformed', MarkerArray, queue_size=10)
         self.pub = rospy.Publisher('/hand_tracking/keypoints', PoseArray, queue_size=10)
         self.pub_marker = rospy.Publisher('/hand_tracking/marker_keypoints', MarkerArray, queue_size=10)
+
+        self.pub_angles = rospy.Publisher('/main_controller/goal_angles', Int32MultiArray, queue_size=10)
 
         self.bound_info = get_yaml_data(get_path_in_package("robot/allegro/configs/allegro_bounds.yaml"))
         self.linear_scaling_factors = self.bound_info['linear_scaling_factors']
@@ -88,14 +91,27 @@ class AllegroRetargetingOptimizer:
         #self.pub_marker.publish(self.create_marker_array_msg(1,0,0))
         #self.pub.publish(self.create_pose_array_msg())
 
-        self.calculate_finger_angles('index', self.finger_coords['index'], self.finger_coords['metacarpals'])
-        self.calculate_thumb_angles(self.finger_coords['thumb'])
+        goal_angles_arr = []
+
+        goal_angles_arr.append(self.calculate_finger_angles('little', self.finger_coords['little'], self.finger_coords['metacarpals']))
+        goal_angles_arr.append(self.calculate_finger_angles('ring', self.finger_coords['ring'], self.finger_coords['metacarpals']))
+        goal_angles_arr.append(self.calculate_finger_angles('middle', self.finger_coords['middle'], self.finger_coords['metacarpals']))
+        goal_angles_arr.append(self.calculate_finger_angles('index', self.finger_coords['index'], self.finger_coords['metacarpals']))
+        goal_angles_arr.append(self.calculate_thumb_angles(self.finger_coords['thumb'])[0])
+        goal_angles_arr.append(self.calculate_thumb_angles(self.finger_coords['thumb'])[1])
+        self.pub_angles.publish(self.create_angle_array_msg(goal_angles_arr))
+
         # self.get_keypoint_difference()
 
         # self.align_hand_to_robot()
 
         # self.pub_marker_mod.publish(self.create_marker_array_msg(0,1,0))
         # self.pub_mod.publish(self.create_pose_array_msg())
+
+    def create_angle_array_msg(self, goal_angles_arr):
+        angle_array_msg = Int32MultiArray()
+        angle_array_msg.data = [int(1000-angle*314) for angle in goal_angles_arr]  # Ensure all values are float
+        return angle_array_msg
 
     def create_pose_array_msg(self):
         pose_array_msg = PoseArray()
@@ -232,8 +248,8 @@ class AllegroRetargetingOptimizer:
             finger_joint_coords[3]
         )
 
-        angle = angle * self.linear_scaling_factors[idx]
-        print(f"finger_type {finger_type}, angle {angle}")
+        # angle = angle * self.linear_scaling_factors[idx]
+        # print(f"finger_type {finger_type}, angle {angle}")
         return angle
 
     def calculate_joint_1_angle(self, thumb_joint_coords):
@@ -304,45 +320,84 @@ class AllegroRetargetingOptimizer:
         if angle < 0:
             angle = 0
         return angle
+    
+    def calculate_joint_total_angle(self, thumb_joint_coords):
+        origin = thumb_joint_coords[1]
+
+        vector_origin_to_tip = thumb_joint_coords[3] - origin
+        vector_origin_to_joint = thumb_joint_coords[0] - origin
+
+        z_axis = np.cross(vector_origin_to_tip, vector_origin_to_joint)
+        z_axis /= np.linalg.norm(z_axis)
+
+        x_axis = vector_origin_to_tip / np.linalg.norm(vector_origin_to_tip)
+        y_axis = np.cross(z_axis, x_axis)
+
+        rotation_matrix = np.column_stack((x_axis, y_axis, z_axis))
+
+        vector_in_plane = np.dot(rotation_matrix.T, vector_origin_to_joint)
+        angle = 3.14 - np.arctan2(vector_in_plane[1], vector_in_plane[0])
+        if angle < 0:
+            angle = 0
+        return angle
 
 
 
     def calculate_thumb_angles(self, thumb_joint_coords):
 
-        time.sleep(0.1)
-        calc_finger_angles = []
-        # joint 1
-        angle = self.calculate_joint_1_angle(thumb_joint_coords)
-        print(f"angle1 {angle}")
-        angle -= 2.3
-        print(f"angle1 {angle}")
-        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[1])
+        # time.sleep(0.1)
+        # calc_finger_angles = []
+        # # joint 1
+        # angle = self.calculate_joint_1_angle(thumb_joint_coords)
+        # print(f"angle1 {angle}")
+        # angle -= 2.3
+        # # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[1])
         
-        # joint 2
-        angle = self.calculate_joint_2_angle(thumb_joint_coords)
-        angle += 0.2
-        print(f"angle2 {angle}")
-        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[2])
+        # # joint 2
+        # angle = self.calculate_joint_2_angle(thumb_joint_coords)
+        # angle += 0.2
+        # print(f"angle2 {angle}")
+        # # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[2])
 
-
-        # joint 3
-        angle = self.calculate_joint_3_angle(thumb_joint_coords)
-        angle -= 0.2
-        print(f"angle3 {angle}")
-        # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[3])
+        # # thumb 0
+        # # joint 3
+        # angle = self.calculate_joint_3_angle(thumb_joint_coords)
+        # angle -= 0.2
+        # print(f"angle3 {angle}")
+        # # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[3])
         
-        angle = -calculate_angle_z(
+        # thumb 0
+        # total angle
+        angle0 = self.calculate_joint_total_angle(thumb_joint_coords)
+        print(f"angle0 {angle0}")
+        angle0 -= 0.2
+        if angle0 < 0:
+            angle0 = 0
+        angle0 *= 3
+        if angle0 > 3.14:
+            angle0 = 3.14
+        print(f"angle0trans {angle0}")
+        # angle0 += 0.4
+        # print(f"angletotal {angle0}")
+
+        # thumb 1
+        angle1 = -calculate_angle_z(
             [1.0,0.0,0.0],
             [0.0,0.0,0.0],
             thumb_joint_coords[1]
         )
-        # angle = 0.263
-        # angle = 1.396
-        angle += 2.8
-        print(f"angle0 {angle}")
+        angle1 += 1.6
+        # print(f"angle1 {angle1}")
+        if angle1 < 0:
+            angle1 = 0
+        angle1 *=3
+        # print(f"angle1trans {angle1}")
+
+        if angle1 > 3.14:
+            angle1 = 3.14
         # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[0])
 
-        return calc_finger_angles
+        return angle0, angle1
 
     def run(self):
         try:

@@ -4,7 +4,9 @@ import numpy as np
 from copy import copy
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseArray
+from std_msgs.msg import Int32MultiArray
 from std_srvs.srv import Trigger
+from inspire_hand.srv import set_angle  # Make sure this import is correct
 import time
 
 
@@ -26,66 +28,49 @@ class AllegroController:
 
         self.joint_comm_publisher = rospy.Publisher('/allegroHand/joint_cmd', JointState, queue_size=1)
         self.joint_comm_delta_publisher = rospy.Publisher('/kth_franka_plant/in/allegro_cmd', JointState, queue_size=1)
-        rospy.wait_for_service('/inspire_hand/get_angle_act')
-        self.get_angle_service = rospy.ServiceProxy('/inspire_hand/get_angle_act', Trigger)
-        self.current_joint_state = self.parse_joint_state(self.get_angle_service().message)
-        rospy.Subscriber('/hand_tracking/keypoints_transformed', PoseArray, self._callback_knuckle_coordinates, queue_size=1)
+        # rospy.wait_for_service('/inspire_hand/get_angle_act')
+        # rospy.wait_for_service('/inspire_hand/set_angle')
+        # self.get_angle_service = rospy.ServiceProxy('/inspire_hand/get_angle_act', Trigger)
+        # self.set_angle_service = rospy.ServiceProxy('/inspire_hand/set_angle', set_angle)
 
         rospy.Subscriber('/kth_franka_plant/in/allegro_cmd', JointState, self._sub_callback_delta_cmd)
+
+        rospy.Subscriber('/motion_retargetting/goal_angles', Int32MultiArray, self._sub_callback_goal_angles)
+        self.goal_angles = []
+
+
         rospy.loginfo(f'{self.node_name}: Initialized!')
-	
-    	
-    def _callback_knuckle_coordinates(self, data):
+
+    def _sub_callback_goal_angles(self, data):
         # Calculate average and lowest frequency from the last 10 seconds
 
         # Rest of the code for publishing desired joint states
         try:
-            cmd_delta_joint_state = list(self.index_delta_cmd[0:4]) + list(self.middle_delta_cmd[4:8]) + list(self.ring_delta_cmd[8:12]) + list(self.thumb_delta_cmd[12:])
-            current_angles = self.current_joint_state.position
+            goal_angles = data.data
 
-            desired_delta_js = copy(self.current_joint_state)
-            desired_delta_js.position = list(np.array(cmd_delta_joint_state))
-            desired_delta_js.effort = []
-            desired_delta_js.velocity = []
-            self.joint_comm_delta_publisher.publish(desired_delta_js)
+            if len(goal_angles) != 6:
+                rospy.logerr("Received incorrect number of angles. Expected 6.")
+                return
+            print(f"{goal_angles}")
+            response = self.set_angle_service(goal_angles[0], goal_angles[1], goal_angles[2], 
+                                   goal_angles[3], goal_angles[4], goal_angles[5])
+            print("DUPA")
 
-            desired_angles = np.array(cmd_delta_joint_state) + np.array(current_angles)
-            desired_angles[0] = 0
-            desired_angles[4] = 0
-            desired_angles[8] = 0
-            desired_js = copy(self.current_joint_state)
-            desired_js.position = list(desired_angles)
-            desired_js.effort = []
-            desired_js.velocity = []
-            if self.index_mutex and self.middle_mutex and self.ring_mutex and self.thumb_mutex is True:
-                current_time = rospy.get_time()  # Get current time
-
-                # Calculate and log frequency
-                if self.last_publish_time is not None:
-                    delta_time = current_time - self.last_publish_time
-                    frequency = 1.0 / delta_time
-                    self.publish_timestamps.append((current_time, frequency))  # Store timestamp and frequency
-                    #rospy.loginfo(f"{self.node_name}: Publishing frequency: {frequency:.2f} Hz")
-
-                self.last_publish_time = current_time  # Update the last publish time
-                self._calculate_recent_frequency_stats(current_time)
-
-                self.joint_comm_publisher.publish(desired_js)
-                self.index_mutex = False
-                self.middle_mutex = False
-                self.ring_mutex = False
-                self.thumb_mutex = False
+            if response.success:
+                rospy.loginfo("Successfully set angles.")
+            else:
+                rospy.logerr(f"Failed to set angles: {response.message}")
         except:
-            rospy.loginfo(f'{self.node_name}: WARN: IK solutions missing! Waiting...')
+            rospy.loginfo(f'{self.node_name}: WARN: Goal angles missing! Waiting...')
             time.sleep(.5)
             pass
+	
 
 
 
 
     def _sub_callback_delta_cmd(self, data):
         cmd_delta_joint_state = data.position
-        self.current_joint_state = self.parse_joint_state(self.get_angle_service().message)
         current_angles = self.current_joint_state.position
 
         desired_angles = np.array(cmd_delta_joint_state) + np.array(current_angles)

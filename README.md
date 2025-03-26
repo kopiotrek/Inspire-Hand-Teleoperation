@@ -18,14 +18,14 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 
 ### Clone this repository
 ```bash
-mkdir ~/ros_ws && cd ~/ros_ws
+mkdir ~/roboskill/Hands && cd ~/roboskill/Hands
 git clone https://github.com/kopiotrek/Allegro-Hand-Teleoperation.git
 ```
 
 ### Add Environment Variables to `.bashrc`
 ```bash
 echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-echo "export PYTHONPATH=$HOME/ros_ws/Allegro-Hand-Teleoperation:\$PYTHONPATH" >> ~/.bashrc
+echo "export PYTHONPATH=$HOME/roboskill/Hands/Inspire-Hand-Teleoperation:\$PYTHONPATH" >> ~/.bashrc
 # echo "export PYTHONPATH=$HOME/ros_ws/ik_teleop:\$PYTHONPATH" >> ~/.bashrc
 echo "export PYTHONPATH=\$PYTHONPATH:/opt/ros/noetic/lib/python3/dist-packages" >> ~/.bashrc
 source ~/.bashrc
@@ -34,7 +34,7 @@ source ~/.bashrc
 ### Set Up Virtual Environment
 ```bash
 sudo apt install python3.8-venv python3-pip
-cd ~/ros_ws/Allegro-Hand-Teleoperation/ik_teleop/
+cd ~/roboskill/Hands/Inspire-Hand-Teleoperation/ik_teleop/
 python3 -m venv venv_teleop
 source venv_teleop/bin/activate
 pip install -r requirements_teleop.txt
@@ -44,14 +44,14 @@ pip install -r requirements_teleop.txt
 
 ### Install Dependencies & Clone Repository
 ```bash
-cd ~/ros_ws
+cd ~/roboskill/Hands
 git clone https://github.com/NYU-robot-learning/Allegro-Hand-Controller-DIME.git
 sudo apt-get install cmake gcc g++ libpopt-dev ros-noetic-libpcan
 ```
 
 ### Build the Controller
 ```bash
-cd ~/ros_ws/Allegro-Hand-Controller-DIME
+cd ~/roboskill/Hands/Allegro-Hand-Controller-DIME
 catkin_make
 ```
 
@@ -61,7 +61,7 @@ catkin_make
 
 ### Install PEAK System CAN Drivers
 ```bash
-mkdir ~/ros_ws/drivers && cd ~/ros_ws/drivers
+mkdir ~/roboskill/Hands/drivers && cd ~/roboskill/Hands/drivers
 wget https://www.peak-system.com/quick/PCAN-Linux-Driver
 ```
 ```bash
@@ -75,7 +75,7 @@ sudo modprobe pcan
 
 ### Install PCAN-Basic API
 ```bash
-cd ~/ros_ws/drivers
+cd ~/roboskill/Hands/drivers
 wget https://www.peak-system.com/quick/BasicLinux
 ```
 ```bash
@@ -94,7 +94,7 @@ ls -l /dev/pcan*
 
 ### Test Connection to the Allegro Hand
 ```bash
-cd ~/ros_ws/Allegro-Hand-Controller-DIME
+cd ~/roboskill/Hands/Allegro-Hand-Controller-DIME
 catkin_make
 source devel/setup.bash
 roslaunch allegro_hand allegro_hand.launch
@@ -106,7 +106,7 @@ Press **H** to home the robot.
 ## 4. Install ROS-TCP-Endpoint
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/roboskill/Hands/src && cd ~/roboskill/Hands/src
 git clone https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git
 cd ..
 catkin_make
@@ -136,11 +136,11 @@ To use Meta Quest for teleoperation, follow these steps:
 1. **Ensure the Allegro Hand is connected and the driver is working.**
 2. Activate the virtual environment:
    ```bash
-   source ~/ros_ws/Allegro-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate
+   source ~/roboskill/Hands/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate
    ```
 3. Run the teleoperation script:
    ```bash
-   python ~/ros_ws/Allegro-Hand-Teleoperation/start_teleop.py --ip=<PC_IP>
+   python ~/roboskill/Hands/Inspire-Hand-Teleoperation/start_teleop.py --ip=<PC_IP>
    ```
 4. **Press "START ALL"** in the interface.
 5. Start the Allegro-Hand-Teleoperation app in Meta Quest, check the IP and otherwise just click continue everywhere, then press skip
