@@ -3,7 +3,7 @@
 import rospy
 from tf2_msgs.msg import TFMessage
 from geometry_msgs.msg import PoseArray, Pose
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Float32MultiArray
 from tf.transformations import quaternion_matrix, quaternion_from_matrix
 from xml.etree import ElementTree as ET
 import numpy as np
@@ -35,13 +35,13 @@ class AllegroRetargetingOptimizer:
             pass
 
 
-        rospy.Subscriber('/hand_tracking/left/joint_poses', PoseArray, callback=self._get_XR_joints_poses, queue_size=1)
-        self.pub_mod = rospy.Publisher('/hand_tracking/keypoints_transformed', PoseArray, queue_size=10)
-        self.pub_marker_mod = rospy.Publisher('/hand_tracking/marker_keypoints_transformed', MarkerArray, queue_size=10)
-        self.pub = rospy.Publisher('/hand_tracking/keypoints', PoseArray, queue_size=10)
-        self.pub_marker = rospy.Publisher('/hand_tracking/marker_keypoints', MarkerArray, queue_size=10)
+        rospy.Subscriber('/hand_tracking/right/joint_poses', PoseArray, callback=self._get_XR_joints_poses, queue_size=1)
+        # self.pub_mod = rospy.Publisher('/hand_tracking/keypoints_transformed', PoseArray, queue_size=10)
+        # self.pub_marker_mod = rospy.Publisher('/hand_tracking/marker_keypoints_transformed', MarkerArray, queue_size=10)
+        # self.pub = rospy.Publisher('/hand_tracking/keypoints', PoseArray, queue_size=10)
+        # self.pub_marker = rospy.Publisher('/hand_tracking/marker_keypoints', MarkerArray, queue_size=10)
 
-        self.pub_angles = rospy.Publisher('/main_controller/goal_angles', Int32MultiArray, queue_size=10)
+        self.pub_angles = rospy.Publisher('/motion_retargetting/goal_angles_raw', Float32MultiArray, queue_size=10)
 
         self.bound_info = get_yaml_data(get_path_in_package("robot/allegro/configs/allegro_bounds.yaml"))
         self.linear_scaling_factors = self.bound_info['linear_scaling_factors']
@@ -109,8 +109,8 @@ class AllegroRetargetingOptimizer:
         # self.pub_mod.publish(self.create_pose_array_msg())
 
     def create_angle_array_msg(self, goal_angles_arr):
-        angle_array_msg = Int32MultiArray()
-        angle_array_msg.data = [int(1000-angle*314) for angle in goal_angles_arr]  # Ensure all values are float
+        angle_array_msg = Float32MultiArray()
+        angle_array_msg.data = [angle for angle in goal_angles_arr]  # Ensure all values are float
         return angle_array_msg
 
     def create_pose_array_msg(self):
@@ -369,32 +369,29 @@ class AllegroRetargetingOptimizer:
         # thumb 0
         # total angle
         angle0 = self.calculate_joint_total_angle(thumb_joint_coords)
-        print(f"angle0 {angle0}")
-        angle0 -= 0.2
-        if angle0 < 0:
-            angle0 = 0
-        angle0 *= 3
-        if angle0 > 3.14:
-            angle0 = 3.14
-        print(f"angle0trans {angle0}")
+        # print(f"angle0 {angle0}")
+        # angle0 -= 0.2
+        # if angle0 < 0:
+        #     angle0 = 0
+        # angle0 *= 3
+        # if angle0 > 3.14:
+        #     angle0 = 3.14
+        # print(f"angle0trans {angle0}")
         # angle0 += 0.4
         # print(f"angletotal {angle0}")
 
         # thumb 1
-        angle1 = -calculate_angle_z(
+        angle1 = calculate_angle_z(
             [1.0,0.0,0.0],
             [0.0,0.0,0.0],
             thumb_joint_coords[1]
         )
-        angle1 += 1.6
-        # print(f"angle1 {angle1}")
-        if angle1 < 0:
-            angle1 = 0
-        angle1 *=3
-        # print(f"angle1trans {angle1}")
-
-        if angle1 > 3.14:
-            angle1 = 3.14
+        # angle1 += 1.6
+        # if angle1 < 0:
+        #     angle1 = 0
+        # angle1 *=3
+        # if angle1 > 3.14:
+        #     angle1 = 3.14
         # calc_finger_angles.append(angle * self.rotatory_thumb_scaling_factors[0])
 
         return angle0, angle1

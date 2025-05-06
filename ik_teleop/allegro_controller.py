@@ -4,9 +4,7 @@ import numpy as np
 from copy import copy
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseArray
-from std_msgs.msg import Int32MultiArray
-from std_srvs.srv import Trigger
-from inspire_hand.srv import set_angle  # Make sure this import is correct
+from std_msgs.msg import Int32MultiArray, Float32MultiArray, MultiArrayLayout, MultiArrayDimension
 import time
 
 
@@ -26,18 +24,17 @@ class AllegroController:
         self.last_publish_time = None  # Timestamp of the last message
         self.publish_timestamps = []  # List of (timestamp, frequency)
 
-        self.joint_comm_publisher = rospy.Publisher('/allegroHand/joint_cmd', JointState, queue_size=1)
-        self.joint_comm_delta_publisher = rospy.Publisher('/kth_franka_plant/in/allegro_cmd', JointState, queue_size=1)
-        # rospy.wait_for_service('/inspire_hand/get_angle_act')
-        # rospy.wait_for_service('/inspire_hand/set_angle')
-        # self.get_angle_service = rospy.ServiceProxy('/inspire_hand/get_angle_act', Trigger)
-        # self.set_angle_service = rospy.ServiceProxy('/inspire_hand/set_angle', set_angle)
 
-        rospy.Subscriber('/kth_franka_plant/in/allegro_cmd', JointState, self._sub_callback_delta_cmd)
+        rospy.Subscriber('/kth_franka_plant/in/hand_cmd', Float32MultiArray, self._sub_callback_delta_cmd, queue_size=1)
+        self.pub_delta_goal_angles = rospy.Publisher('/kth_franka_plant/in/hand_cmd', Float32MultiArray, queue_size=1)
 
-        rospy.Subscriber('/motion_retargetting/goal_angles', Int32MultiArray, self._sub_callback_goal_angles)
+        rospy.Subscriber('/motion_retargetting/goal_angles_raw', Float32MultiArray, self._sub_callback_goal_angles, queue_size=1)
+        rospy.Subscriber('/inspire_hand/angle_act', Int32MultiArray, self._sub_callback_angle_act, queue_size=1)
+        self.pub_angles = rospy.Publisher('/inspire_hand_teleop/goal_angles', Int32MultiArray, queue_size=1)
+        
+        self.scaling_factors = [1.1,1.1,1.1,1.1,3,5]
+        self.offset_factors = [0,0,0,0,0,-1.6]
         self.goal_angles = []
-
 
         rospy.loginfo(f'{self.node_name}: Initialized!')
 
@@ -46,53 +43,92 @@ class AllegroController:
 
         # Rest of the code for publishing desired joint states
         try:
-            goal_angles = data.data
-
-            if len(goal_angles) != 6:
+            self.goal_angles = data.data
+            if len(self.goal_angles) != 6:
                 rospy.logerr("Received incorrect number of angles. Expected 6.")
                 return
-            print(f"{goal_angles}")
-            response = self.set_angle_service(goal_angles[0], goal_angles[1], goal_angles[2], 
-                                   goal_angles[3], goal_angles[4], goal_angles[5])
-            print("DUPA")
+            
+            # Apply scaling and offset
+            self.goal_angles = np.add(self.goal_angles, self.offset_factors)
+            self.goal_angles = np.multiply(self.goal_angles, self.scaling_factors)
 
-            if response.success:
-                rospy.loginfo("Successfully set angles.")
-            else:
-                rospy.logerr(f"Failed to set angles: {response.message}")
+            # Check if angles are within the range [0, π]
+            for i, angle in enumerate(self.goal_angles):
+                if angle < 0 or angle > np.pi:
+                    self.goal_angles[i] = np.clip(angle, 0, np.pi)
+
+            # Convert to new scale (assuming radians to degrees or another scale)
+            self.goal_angles = np.multiply(self.goal_angles, np.pi*100)
+            
+            # Adjust goal angles by subtracting from 1000
+            self.goal_angles = 1000 - np.round(self.goal_angles).astype(int)
+            # rospy.loginfo(f'++++++++ self.goal_angles {self.goal_angles}')
+
+            # self.pub_angles.publish(self.goal_angles)
+
         except:
             rospy.loginfo(f'{self.node_name}: WARN: Goal angles missing! Waiting...')
-            time.sleep(.5)
+            time.sleep(1)
             pass
 	
+    def _sub_callback_angle_act(self, data):
+        # try:
 
+        self.angle_act = data.data
+        if len(self.angle_act) != 6:
+            rospy.logerr("Received incorrect number of angles. Expected 6.")
+            return
+        
 
+        delta_goal_angles = self.goal_angles - self.angle_act
 
+        delta_goal_angles = np.round(delta_goal_angles).astype(float)
+
+        delta_goal_angles /= 1000
+
+        # Create a layout for the Float32MultiArray message
+        layout = MultiArrayLayout()
+        layout.dim.append(MultiArrayDimension())
+        layout.dim[0].label = 'angles'
+        layout.dim[0].size = len(delta_goal_angles)
+        layout.dim[0].stride = len(delta_goal_angles)
+        # Create the message and assign layout and data
+        delta_goal_angles_msg = Float32MultiArray()
+        delta_goal_angles_msg.layout = layout
+        delta_goal_angles_msg.data = [angle for angle in delta_goal_angles]  # Ensure all values are float
+
+        rospy.loginfo(f'self.goal_angles {self.goal_angles} self.angle_act {self.angle_act} delta_goal_angles {delta_goal_angles}')
+        
+        # Publish the message
+        self.pub_delta_goal_angles.publish(delta_goal_angles_msg)
+
+        goal_angles_msg = Int32MultiArray()
+        goal_angles_msg.layout = layout
+        goal_angles_msg.data = [angle for angle in self.goal_angles]  # Ensure all values are float
+
+        self.pub_angles.publish(goal_angles_msg)
+
+        # except:
+        #     rospy.loginfo(f'{self.node_name}: WARN: Goal angles missing! Waiting...')
+        #     time.sleep(1)
+        #     pass
 
     def _sub_callback_delta_cmd(self, data):
-        cmd_delta_joint_state = data.position
-        current_angles = self.current_joint_state.position
+        delta_goal_angles = data.data
+        delta_goal_angles += self.angle_act
 
-        desired_angles = np.array(cmd_delta_joint_state) + np.array(current_angles)
-        desired_angles[0] = 0
-        desired_angles[4] = 0
-        desired_angles[8] = 0
-        
-        desired_js = copy(self.current_joint_state)
-        desired_js.position = list(desired_angles)
-        desired_js.effort = []
-        desired_js.velocity = []
+        # Create a layout for the Float32MultiArray message
+        layout = MultiArrayLayout()
+        layout.dim.append(MultiArrayDimension())
+        layout.dim[0].label = 'angles'
+        layout.dim[0].size = len(delta_goal_angles)
+        layout.dim[0].stride = len(delta_goal_angles)
+        # Create the message and assign layout and data
+        delta_goal_angles_msg = Float32MultiArray()
+        delta_goal_angles_msg.layout = layout
+        delta_goal_angles_msg.data = [angle for angle in delta_goal_angles]  # Ensure all values are float
 
-        current_time = rospy.get_time()  # Get current time
-        # Calculate and log frequency
-        if self.last_publish_time is not None:
-            delta_time = current_time - self.last_publish_time
-            frequency = 1.0 / delta_time
-            self.publish_timestamps.append((current_time, frequency))  # Store timestamp and frequency
-            #rospy.loginfo(f"{self.node_name}: Publishing frequency: {frequency:.2f} Hz")
-        self.last_publish_time = current_time  # Update the last publish time
-        self._calculate_recent_frequency_stats(current_time)
-        self.joint_comm_publisher.publish(desired_js)
+        self.pub_delta_goal_angles.publish(delta_goal_angles_msg)
 
     def _calculate_recent_frequency_stats(self, current_time):
         # Keep only the data from the last 10 seconds
