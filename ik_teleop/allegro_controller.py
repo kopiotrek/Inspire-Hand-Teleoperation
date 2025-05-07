@@ -32,8 +32,10 @@ class AllegroController:
         rospy.Subscriber('/inspire_hand/angle_act', Int32MultiArray, self._sub_callback_angle_act, queue_size=1)
         self.pub_angles = rospy.Publisher('/inspire_hand_teleop/goal_angles', Int32MultiArray, queue_size=1)
         
-        self.scaling_factors = [1.1,1.1,1.1,1.1,3,5]
-        self.offset_factors = [0,0,0,0,0,-1.6]
+        # self.scaling_factors = [1.1,1.1,1.1,1.1,3,5]
+        # self.offset_factors = [0,0,0,0,0,-1.6]
+        self.scaling_factors = [1.4,1.3,1.3,1.3,3,5]
+        self.offset_factors = [0,0,0,0,0,-1.9]
         self.goal_angles = []
 
         rospy.loginfo(f'{self.node_name}: Initialized!')

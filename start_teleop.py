@@ -7,7 +7,7 @@ import argparse
 
 # Argument parser to get the IP address
 parser = argparse.ArgumentParser(description='Teleoperation Control Panel')
-parser.add_argument('--ip', type=str, default='192.168.7.108', help='TCP IP address for the endpoint')
+parser.add_argument('--ip', type=str, default='172.16.0.119', help='TCP IP address for the endpoint')
 args = parser.parse_args()
 
 # Paths
