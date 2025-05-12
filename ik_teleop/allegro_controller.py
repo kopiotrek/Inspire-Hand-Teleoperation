@@ -28,8 +28,6 @@ class AllegroController:
         self.pub_delta_goal_angles = rospy.Publisher('/inspire_hand/goal_angles_delta', JointState, queue_size=1)
         
         self.paused = False
-        self.pause_signal_start_time = None
-        self.pause_hold_duration = 0.05  # seconds
         rospy.Subscriber('/hand_tracking/pause', Bool, self._pause_callback, queue_size=1)
         rospy.Subscriber('/motion_retargetting/goal_angles_raw', Float32MultiArray, self._sub_callback_goal_angles, queue_size=1)
         rospy.Subscriber('/inspire_hand/joint_state', JointState, self._sub_callback_joint_state, queue_size=1)
@@ -42,16 +40,8 @@ class AllegroController:
         rospy.loginfo(f'{self.node_name}: Initialized!')
 
     def _pause_callback(self, msg):
-        now = time.time()
-    
-        if msg.data:  # Pause signal is being held
-            if self.pause_signal_start_time is None:
-                self.pause_signal_start_time = now
-            elif now - self.pause_signal_start_time >= self.pause_hold_duration:
-                self.paused = not self.paused
-                self.pause_signal_start_time = None  # Reset to wait for next distinct toggle
-        else:
-            self.pause_signal_start_time = None  # Reset if signal not held long enough
+        if msg.data:  # Only toggle on True
+            self.paused = not self.paused
 
 
     def _sub_callback_goal_angles(self, data):
