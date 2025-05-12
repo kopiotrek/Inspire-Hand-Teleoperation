@@ -40,10 +40,8 @@ class AllegroController:
         rospy.loginfo(f'{self.node_name}: Initialized!')
 
     def _pause_callback(self, msg):
-        self.paused = msg.data
-        if self.paused:
-            rospy.loginfo(f"{self.node_name}: Paused! Setting goal_angles to current joint state.")
-            self.goal_angles = list(self.angle_act)  # Stop motion
+        if msg.data:  # Only toggle on True
+            self.paused = not self.paused
 
 
     def _sub_callback_goal_angles(self, data):
@@ -90,9 +88,7 @@ class AllegroController:
             self.goal_angles = self.angle_act
 
         if self.paused:
-            # During pause, goal_angles remain fixed at current joint state
-            self.goal_angles = list(self.angle_act)
-
+            return
         
 
         # delta_goal_angles = self.goal_angles - self.angle_act
@@ -129,7 +125,8 @@ class AllegroController:
         delta_goal_angles = data.position
         if not self.first_goal_received:
             self.first_goal_received = True
-
+        if self.paused:
+            return
         delta_goal_angles += self.angle_act
         goal_angles = delta_goal_angles
         print(goal_angles)
