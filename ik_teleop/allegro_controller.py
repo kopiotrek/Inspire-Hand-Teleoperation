@@ -3,8 +3,7 @@ import os
 import numpy as np
 from copy import copy
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseArray
-from std_msgs.msg import Int32MultiArray, Float32MultiArray, MultiArrayLayout, MultiArrayDimension
+from std_msgs.msg import Bool, Float32MultiArray
 import time
 
 
@@ -27,7 +26,9 @@ class AllegroController:
 
         rospy.Subscriber('/kth_franka_plant/in/inspire_cmd', JointState, self._sub_callback_delta_cmd, queue_size=1)
         self.pub_delta_goal_angles = rospy.Publisher('/inspire_hand/goal_angles_delta', JointState, queue_size=1)
-
+        
+        self.paused = False
+        rospy.Subscriber('/hand_tracking/pause', Bool, self._pause_callback, queue_size=1)
         rospy.Subscriber('/motion_retargetting/goal_angles_raw', Float32MultiArray, self._sub_callback_goal_angles, queue_size=1)
         rospy.Subscriber('/inspire_hand/joint_state', JointState, self._sub_callback_joint_state, queue_size=1)
         self.pub_angles = rospy.Publisher('/inspire_hand/goal_angles', JointState, queue_size=1)
@@ -37,6 +38,13 @@ class AllegroController:
         self.first_goal_received = False
 
         rospy.loginfo(f'{self.node_name}: Initialized!')
+
+    def _pause_callback(self, msg):
+        self.paused = msg.data
+        if self.paused:
+            rospy.loginfo(f"{self.node_name}: Paused! Setting goal_angles to current joint state.")
+            self.goal_angles = list(self.angle_act)  # Stop motion
+
 
     def _sub_callback_goal_angles(self, data):
         # Calculate average and lowest frequency from the last 10 seconds
@@ -80,6 +88,11 @@ class AllegroController:
             return
         if not self.first_goal_received:
             self.goal_angles = self.angle_act
+
+        if self.paused:
+            # During pause, goal_angles remain fixed at current joint state
+            self.goal_angles = list(self.angle_act)
+
         
 
         # delta_goal_angles = self.goal_angles - self.angle_act
