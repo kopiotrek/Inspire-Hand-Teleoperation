@@ -40,8 +40,7 @@ class AllegroController:
         rospy.loginfo(f'{self.node_name}: Initialized!')
 
     def _pause_callback(self, msg):
-        if msg.data:  # Only toggle on True
-            self.paused = not self.paused
+        self.paused = msg.data
 
 
     def _sub_callback_goal_angles(self, data):
@@ -89,6 +88,7 @@ class AllegroController:
 
         if self.paused:
             return
+
         
 
         # delta_goal_angles = self.goal_angles - self.angle_act
