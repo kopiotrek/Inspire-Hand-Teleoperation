@@ -11,9 +11,9 @@ parser.add_argument('--ip', type=str, default='172.16.0.119', help='TCP IP addre
 args = parser.parse_args()
 
 # Paths
-SCRIPTS_DIR = os.path.expanduser("~/roboskill/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop")
-ALLEGRO_HAND_DIR = os.path.expanduser("~/roboskill/ros_ws/src/Allegro-Hand-Controller-DIME")
-ACTIVATE_ENV = "source ~/roboskill/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/roboskill/ros_ws/src/devel/setup.bash"
+SCRIPTS_DIR = os.path.expanduser("~/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop")
+ALLEGRO_HAND_DIR = os.path.expanduser("~/ros_ws/src/Allegro-Hand-Controller-DIME")
+ACTIVATE_ENV = "source ~/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/ros_ws/src/devel/setup.bash"
 
 # List of scripts
 scripts = {

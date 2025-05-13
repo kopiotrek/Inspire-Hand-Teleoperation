@@ -24,6 +24,7 @@ class AllegroController:
         self.publish_timestamps = []  # List of (timestamp, frequency)
 
 
+        rospy.Subscriber('/kth_franka_plant/in/inspire_cmd', JointState, self._sub_callback_delta_cmd, queue_size=1)
         self.pub_delta_goal_angles = rospy.Publisher('/inspire_hand/goal_angles_delta', JointState, queue_size=1)
         
         self.paused = False
@@ -32,8 +33,8 @@ class AllegroController:
         rospy.Subscriber('/inspire_hand/joint_state', JointState, self._sub_callback_joint_state, queue_size=1)
         self.pub_angles = rospy.Publisher('/inspire_hand/goal_angles', JointState, queue_size=1)
         
-        self.scaling_factors = [1.4,1.3,1.3,1.3,4,5]
-        self.offset_factors = [0,0,0,0,0,-1.7]
+        self.scaling_factors = [1.4,1.3,1.3,1.3,3,5]
+        self.offset_factors = [0,0,0,0,0,-1.9]
         self.first_goal_received = False
 
         rospy.loginfo(f'{self.node_name}: Initialized!')
@@ -108,6 +109,20 @@ class AllegroController:
         #     rospy.loginfo(f'{self.node_name}: WARN: Goal angles missing! Waiting...')
         #     time.sleep(1)
         #     pass
+
+    def _sub_callback_delta_cmd(self, data):
+        delta_goal_angles = data.position
+        if not self.first_goal_received:
+            self.first_goal_received = True
+        if self.paused:
+            return
+        delta_goal_angles += self.angle_act
+        goal_angles = delta_goal_angles
+        goal_angles_msg = JointState()
+
+        goal_angles_msg.position = [angle for angle in goal_angles]  # Ensure all values are float
+
+        self.pub_angles.publish(goal_angles_msg)
 
     def _calculate_recent_frequency_stats(self, current_time):
         # Keep only the data from the last 10 seconds
