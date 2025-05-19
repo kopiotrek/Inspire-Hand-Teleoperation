@@ -11,21 +11,16 @@ parser.add_argument('--ip', type=str, default='172.16.0.119', help='TCP IP addre
 args = parser.parse_args()
 
 # Paths
-SCRIPTS_DIR = os.path.expanduser("~/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop")
-ALLEGRO_HAND_DIR = os.path.expanduser("~/ros_ws/src/Allegro-Hand-Controller-DIME")
-ACTIVATE_ENV = "source ~/ros_ws/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/ros_ws/src/devel/setup.bash"
+SCRIPTS_DIR = os.path.expanduser("~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop")
+ACTIVATE_ENV = "source ~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/roboskill/inspire-hand/devel/setup.bash"
 
 # List of scripts
 scripts = {
     "roscore": f"roscore",
-    "Allegro Controller": f"python {SCRIPTS_DIR}/allegro_controller.py",
-    "Index Controller": f"python {SCRIPTS_DIR}/index_controller.py",
-    "Middle Controller": f"python {SCRIPTS_DIR}/middle_controller.py",
-    "Ring Controller": f"python {SCRIPTS_DIR}/ring_controller.py",
-    "Thumb Controller": f"python {SCRIPTS_DIR}/thumb_controller.py",
+    "teleop": f"python {SCRIPTS_DIR}/teleop.py",
+    "plant interface": f"python {SCRIPTS_DIR}/plant_interface.py",
     "Motion Retargetting": f"python {SCRIPTS_DIR}/motion_retargetting.py",
     "TCP Endpoint": f"roslaunch ros_tcp_endpoint endpoint.launch tcp_ip:={args.ip} tcp_port:=10000",
-    "Allegro Hardware Controller": f"source {ALLEGRO_HAND_DIR}/devel/setup.bash && roslaunch allegro_hand allegro_hand.launch",
 }
 
 processes = {}  # Dictionary to store running processes

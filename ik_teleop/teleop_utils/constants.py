@@ -79,7 +79,7 @@ XELA_FINGER_NUM_TAXELS= 16
 XELA_NUM_TAXELS = 16
 # Robot parameters
 
-# Allegro
+# Inspire
 ALLEGRO_JOINTS_PER_FINGER = 4
 ALLEGRO_JOINT_OFFSETS = {
     'index': 0,

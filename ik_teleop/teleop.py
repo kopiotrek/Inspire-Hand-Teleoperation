@@ -7,9 +7,9 @@ from std_msgs.msg import Bool, Float32MultiArray
 import time
 
 
-class AllegroController:
+class InspireController:
     def __init__(self):
-        self.node_name = 'allegro_controller'
+        self.node_name = 'inspire_controller'
         try:
             rospy.init_node(self.node_name)
         except rospy.ROSException as e:
@@ -35,6 +35,7 @@ class AllegroController:
         self.scaling_factors = [1.4,1.3,1.3,1.3,4,5]
         self.offset_factors = [0,0,0,0,0,-1.7]
         self.first_goal_received = False
+        self.prev_goal_angles = None
 
         rospy.loginfo(f'{self.node_name}: Initialized!')
 
@@ -76,38 +77,33 @@ class AllegroController:
             pass
 	
     def _sub_callback_joint_state(self, data):
-        # try:
-
         self.angle_act = data.position
         if len(self.angle_act) != 6:
             rospy.logerr("Received incorrect number of angles. Expected 6.")
             return
         if not self.first_goal_received:
             self.goal_angles = self.angle_act
+            return
 
         if self.paused:
             return
 
-        
+        # Compute delta between current and previous goal angles
+        if self.prev_goal_angles is not None:
+            delta_goal_angles = tuple(self.goal_angles[i] - self.prev_goal_angles[i] for i in range(len(self.goal_angles)))
 
-        # delta_goal_angles = self.goal_angles - self.angle_act
-        delta_goal_angles = tuple(self.goal_angles[i] - self.angle_act[i] for i in range(len(self.goal_angles)))
-        delta_goal_angles_msg = JointState()
-        delta_goal_angles_msg.position = [angle for angle in delta_goal_angles]  # Ensure all values are float
-        
-        # Publish the message
-        self.pub_delta_goal_angles.publish(delta_goal_angles_msg)
+            # Publish delta_goal_angles
+            delta_goal_angles_msg = JointState()
+            delta_goal_angles_msg.position = [angle for angle in delta_goal_angles]
+            self.pub_delta_goal_angles.publish(delta_goal_angles_msg)
 
+        # Publish current goal angles
         goal_angles_msg = JointState()
-        # goal_angles_msg.layout = layout
-        goal_angles_msg.position = [angle for angle in self.goal_angles]  # Ensure all values are float
-        
+        goal_angles_msg.position = [angle for angle in self.goal_angles]
         self.pub_angles.publish(goal_angles_msg)
 
-        # except:
-        #     rospy.loginfo(f'{self.node_name}: WARN: Goal angles missing! Waiting...')
-        #     time.sleep(1)
-        #     pass
+        # Update previous goal angles
+        self.prev_goal_angles = copy(self.goal_angles)
 
     def _calculate_recent_frequency_stats(self, current_time):
         # Keep only the data from the last 10 seconds
@@ -155,10 +151,10 @@ class AllegroController:
 
 
 if __name__ == '__main__':
-    node_name = 'allegro_controller'
+    node_name = 'inspire_controller'
     #rospy.init_node(node_name)
-    allegro_controller = AllegroController()
-    allegro_controller.run()
+    inspire_controller = InspireController()
+    inspire_controller.run()
     # Set up signal handler for Ctrl+C
 
 

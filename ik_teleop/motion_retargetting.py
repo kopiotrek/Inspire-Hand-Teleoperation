@@ -25,7 +25,7 @@ ROBOT_JOINTS_RAW = {
 
 ROBOT_KEYPOINTS_COUNT = 6
 
-class AllegroRetargetingOptimizer:
+class InspireRetargetingOptimizer:
     def __init__(self):
         self.node_name = 'motion_retargetting'
         try:
@@ -43,8 +43,6 @@ class AllegroRetargetingOptimizer:
 
         self.pub_angles = rospy.Publisher('/motion_retargetting/goal_angles_raw', Float32MultiArray, queue_size=10)
 
-        self.bound_info = get_yaml_data(get_path_in_package("robot/allegro/configs/allegro_bounds.yaml"))
-        self.linear_scaling_factors = self.bound_info['linear_scaling_factors']
         self.finger_coords = []
         self.finger_orientations = []
         self.robot_coords = []
@@ -53,10 +51,10 @@ class AllegroRetargetingOptimizer:
         # self.knuckle_points = (OCULUS_JOINTS['knuckles'][3], OCULUS_JOINTS['knuckles'][0])
 
         #####################################
-        # self.urdf_file = get_path_in_package("robot/assets/allegro_hand_right.urdf")
-        # rospy.Subscriber('/allegroHand/tf', TFMessage, self.tf_callback)
+        # self.urdf_file = get_path_in_package("robot/assets/inspire_hand_right.urdf")
+        # rospy.Subscriber('/inspireHand/tf', TFMessage, self.tf_callback)
         # self.tree = ET.parse(self.urdf_file)
-        self.allegro_keypoints_pose_array = []
+        self.inspire_keypoints_pose_array = []
 
         rospy.loginfo(f"{self.node_name}: Initialized!")
 
@@ -248,8 +246,6 @@ class AllegroRetargetingOptimizer:
             finger_joint_coords[3]
         )
 
-        # angle = angle * self.linear_scaling_factors[idx]
-        # print(f"finger_type {finger_type}, angle {angle}")
         return angle
 
     def calculate_joint_1_angle(self, thumb_joint_coords):
@@ -407,5 +403,5 @@ class AllegroRetargetingOptimizer:
 
 
 if __name__ == "__main__":
-    listener = AllegroRetargetingOptimizer()
+    listener = InspireRetargetingOptimizer()
     listener.run()
