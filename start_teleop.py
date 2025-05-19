@@ -10,9 +10,20 @@ parser = argparse.ArgumentParser(description='Teleoperation Control Panel')
 parser.add_argument('--ip', type=str, default='172.16.0.119', help='TCP IP address for the endpoint')
 args = parser.parse_args()
 
-# Paths
-SCRIPTS_DIR = os.path.expanduser("~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop")
-ACTIVATE_ENV = "source ~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/roboskill/inspire-hand/devel/setup.bash"
+# # Paths
+# SCRIPTS_DIR = os.path.expanduser("~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop")
+# ACTIVATE_ENV = "source ~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/roboskill/inspire-hand/devel/setup.bash"
+
+# Get the absolute path to this script's directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Construct paths relative to that
+SCRIPTS_DIR = os.path.join(BASE_DIR, "ik_teleop")
+VENV_PATH = os.path.join(SCRIPTS_DIR, "venv_teleop", "bin", "activate")
+DEVEL_SETUP = os.path.abspath(os.path.join(BASE_DIR, "../../devel/setup.bash"))  # Adjust if needed
+
+# Environment activation command
+ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
 
 # List of scripts
 scripts = {
