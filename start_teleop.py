@@ -10,17 +10,13 @@ parser = argparse.ArgumentParser(description='Teleoperation Control Panel')
 parser.add_argument('--ip', type=str, default='172.16.0.119', help='TCP IP address for the endpoint')
 args = parser.parse_args()
 
-# # Paths
-# SCRIPTS_DIR = os.path.expanduser("~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop")
-# ACTIVATE_ENV = "source ~/roboskill/inspire-hand/src/Inspire-Hand-Teleoperation/ik_teleop/venv_teleop/bin/activate && source ~/roboskill/inspire-hand/devel/setup.bash"
-
 # Get the absolute path to this script's directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Construct paths relative to that
 SCRIPTS_DIR = os.path.join(BASE_DIR, "ik_teleop")
 VENV_PATH = os.path.join(SCRIPTS_DIR, "venv_teleop", "bin", "activate")
-DEVEL_SETUP = os.path.abspath(os.path.join(BASE_DIR, "../../devel/setup.bash"))  # Adjust if needed
+DEVEL_SETUP = os.path.abspath(os.path.join(BASE_DIR, "../../devel/setup.bash"))
 
 # Environment activation command
 ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
@@ -28,8 +24,10 @@ ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
 # List of scripts
 scripts = {
     "roscore": f"roscore",
-    "teleop": f"python {SCRIPTS_DIR}/teleop.py",
-    "plant interface": f"python {SCRIPTS_DIR}/plant_interface.py",
+    "Plant Interface": f"python {SCRIPTS_DIR}/plant_interface.py",
+    "Hardware Controller": f"roslaunch inspire_hand hand_control.launch",
+    "Controller Topic Interface": f"roslaunch inspire_hand_topic_interface hand_control.launch",
+    "Teleoperation": f"python {SCRIPTS_DIR}/teleop.py",
     "Motion Retargetting": f"python {SCRIPTS_DIR}/motion_retargetting.py",
     "TCP Endpoint": f"roslaunch ros_tcp_endpoint endpoint.launch tcp_ip:={args.ip} tcp_port:=10000",
 }
