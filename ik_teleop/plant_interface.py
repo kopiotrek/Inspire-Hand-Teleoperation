@@ -2,10 +2,11 @@ import rospy
 from copy import copy
 from std_msgs.msg import Bool, Float32
 from sensor_msgs.msg import JointState
-
+import time
+import argparse
 
 class InspireController:
-    def __init__(self):
+    def __init__(self, args):
         self.node_name = 'inspire_controller'
         try:
             rospy.init_node(self.node_name)
@@ -15,19 +16,43 @@ class InspireController:
 
         rospy.Subscriber('/kth_franka_plant/in/inspire_cmd', JointState, self._sub_callback_delta_cmd, queue_size=1)
         rospy.Subscriber('/kth_franka_plant/in/grasp_signal', Float32, self._sub_callback_grasp_signal, queue_size=1)
-        rospy.Subscriber('/button', Bool, self._sub_callback_button, queue_size=1)
+        rospy.Subscriber('/activate_button', Bool, self._sub_callback_activate_button, queue_size=1)
+        rospy.Subscriber('/release_button', Bool, self._sub_callback_release_button, queue_size=1)
+        rospy.Subscriber('/quest/noding_gesture', Bool, self._sub_callback_nodding_gesture, queue_size=1)
         rospy.Subscriber('/replay/inspire_cmd_absolute', JointState, self._sub_callback_absolute_cmd, queue_size=1)
         rospy.Subscriber('/inspire_hand/joint_state', JointState, self._sub_callback_joint_state, queue_size=1)
-        self.pub_angles = rospy.Publisher('/inspire_hand/goal_angles', JointState, queue_size=1)
-        
+        self.pub_angles = rospy.Publisher('/inspire_hand/goal_angles', JointState, queue_size=0)
+        self.pub_grasp_state = rospy.Publisher('/grasp_state', Bool, queue_size=0)
+
         self.first_goal_received = False
         self.absolute = False
         self.prev_goal_angles = None
         self.new_goal_received = False
         self.grasped = False
-        self.button_pressed = False
-        self.grasp_treshold = 0.2
+        self.activate_button_pressed = False
+        self.mode = args.mode
+        self.scooper_xtra_var = False
+
+        if self.mode == 'ajax':
+            self.grasp_treshold = 0.8
+        elif self.mode == 'scooper':
+            self.grasp_treshold = 0.8
+        elif self.mode == 'drill':
+            self.grasp_treshold = 0.8
+        print(f"self.mode {self.mode}")
+        self.home_robot()
         rospy.loginfo(f'{self.node_name}: Initialized!')
+
+    def home_robot(self):
+        #              little  ring    middle  index   t.flex  t.rotate
+        goal_angles = [1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 0.0]
+        goal_angles_msg = JointState()
+        goal_angles_msg.position = [angle for angle in goal_angles]
+        while self.pub_angles.get_num_connections() == 0 and not rospy.is_shutdown():
+            rospy.loginfo("Waiting for subscribers to /inspire_hand/goal_angles...")
+            rospy.sleep(0.1)
+        self.pub_angles.publish(goal_angles_msg)
+        rospy.loginfo(f"{self.node_name}: Home position")
 
     def _sub_callback_joint_state(self, data):
         self.angle_act = data.position
@@ -35,16 +60,15 @@ class InspireController:
             rospy.logerr("Received incorrect number of angles. Expected 6.")
             return
         if not self.first_goal_received:
-            self.goal_angles = self.angle_act
-            self.prev_goal_angles = self.angle_act
+            self.goal_angles = list(self.angle_act)
+
+            # self.goal_angles = self.angle_act
+            self.prev_goal_angles = self.goal_angles
             return
 
         if self.grasped:
             return
         
-        if self.button_pressed:
-            return
-
         if not self.absolute and self.new_goal_received:
             if self.prev_goal_angles is None:
                 self.prev_goal_angles = self.angle_act  # Fallback init
@@ -59,45 +83,192 @@ class InspireController:
 
             goal_angles_msg = JointState()
             goal_angles_msg.position = [angle for angle in self.goal_angles]
+            # print(goal_angles_msg)
+
             self.pub_angles.publish(goal_angles_msg)
             self.new_goal_received = False
 
             # Update previous goal for next delta application
             self.prev_goal_angles = copy(self.goal_angles)
 
-    def _sub_callback_button(self, data):
+    def _sub_callback_nodding_gesture(self, data):
         if data.data:
-            self.button_pressed = True
+            if self.grasped:
+                self.activate_button_pressed = ~self.activate_button_pressed 
+                if self.activate_button_pressed:
+                    for _ in range(10):
+                        if self.mode == 'ajax':
+                            self.pub_angles.publish(self.activate_ajax_goal_angles(self.activate_button_pressed))
+                        elif self.mode == 'scooper':
+                            self.pub_angles.publish(self.activate_scooper_goal_angles(self.activate_button_pressed))
+                        elif self.mode == 'drill':
+                            self.pub_angles.publish(self.activate_drill_goal_angles(self.activate_button_pressed))
+                        time.sleep(0.02)
+                    self.new_goal_received = False
+                else:
+                    if self.mode == 'ajax':
+                        self.pub_angles.publish(self.activate_ajax_goal_angles(self.activate_button_pressed))
+                    elif self.mode == 'scooper':
+                        self.pub_angles.publish(self.activate_scooper_goal_angles(self.activate_button_pressed))
+                    elif self.mode == 'drill':
+                        self.pub_angles.publish(self.activate_drill_goal_angles(self.activate_button_pressed))
+                    self.new_goal_received = False
+        else:
             goal_angles = copy(self.prev_goal_angles)
+            print(goal_angles)
+            goal_angles[0] = 1000
+            goal_angles[1] = 1000
+            goal_angles[2] = 1000
+            goal_angles[3] = 1000
+            goal_angles[4] = 1000
+            goal_angles[5] = 0
+            self.prev_goal_angles = goal_angles
+            goal_angles_msg = JointState()
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            for _ in range(30):  # 10 Hz * 3 seconds = 30 iterations
+                self.pub_angles.publish(goal_angles_msg)
+                time.sleep(0.1)  # 1 / 10 Hz
+            self.new_goal_received = False
+            self.grasped = False
+            self.scooper_xtra_var = False
+            
+
+    def _sub_callback_activate_button(self, data):
+        if data.data:
+            self.activate_button_pressed = True
+            for _ in range(10):
+                if self.mode == 'ajax':
+                    self.pub_angles.publish(self.activate_ajax_goal_angles(self.activate_button_pressed))
+                elif self.mode == 'scooper':
+                    self.pub_angles.publish(self.activate_scooper_goal_angles(self.activate_button_pressed))
+                elif self.mode == 'drill':
+                    self.pub_angles.publish(self.activate_drill_goal_angles(self.activate_button_pressed))
+                time.sleep(0.1)
+            self.new_goal_received = False
+        else:
+            self.activate_button_pressed = False
+            if self.mode == 'ajax':
+                self.pub_angles.publish(self.activate_ajax_goal_angles(self.activate_button_pressed))
+            elif self.mode == 'scooper':
+                self.pub_angles.publish(self.activate_scooper_goal_angles(self.activate_button_pressed))
+            elif self.mode == 'drill':
+                self.pub_angles.publish(self.activate_drill_goal_angles(self.activate_button_pressed))
+            self.new_goal_received = False
+
+    def _sub_callback_release_button(self, data):
+        if data.data:
+            goal_angles = copy(self.prev_goal_angles)
+            goal_angles[0] = 1000
+            goal_angles[1] = 1000
+            goal_angles[2] = 1000
+            goal_angles[3] = 1000
+            goal_angles[4] = 1000
+            goal_angles[5] = 0
+            self.prev_goal_angles = goal_angles
+            goal_angles_msg = JointState()
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            for _ in range(30):  # 10 Hz * 3 seconds = 30 iterations
+                self.pub_angles.publish(goal_angles_msg)
+                time.sleep(0.1)  # 1 / 10 Hz
+            self.new_goal_received = False
+            self.grasped = False
+            self.scooper_xtra_var = False
+
+
+    def activate_ajax_goal_angles(self, activate):
+        goal_angles_msg = JointState()
+        goal_angles = copy(self.prev_goal_angles)
+        if activate:
             goal_angles[0] = 0
             goal_angles[1] = 0
             goal_angles[2] = 0
             goal_angles[3] = 0
-            goal_angles_msg = JointState()
             goal_angles_msg.position = [angle for angle in goal_angles]
-            self.pub_angles.publish(goal_angles_msg)
-            self.new_goal_received = False
+            return goal_angles_msg
         else:
-            self.button_pressed = False
-            self.button_pressed = True
-            goal_angles = copy(self.prev_goal_angles)
             goal_angles[0] = 0
             goal_angles[1] = 0
             goal_angles[2] = 1000
             goal_angles[3] = 1000
-            goal_angles_msg = JointState()
             goal_angles_msg.position = [angle for angle in goal_angles]
-            self.pub_angles.publish(goal_angles_msg)
-            self.new_goal_received = False
+            return goal_angles_msg
 
-            
+
+    def activate_scooper_goal_angles(self, activate):
+        goal_angles_msg = JointState()
+        goal_angles = copy(self.prev_goal_angles)
+
+        #                little  ring    middle  index   t.flex  t.rotate
+        # goal_angles = [1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 0.0]
+
+        if activate:
+            if self.scooper_xtra_var == False:
+                goal_angles[0] = 0
+                goal_angles[1] = 0
+                goal_angles[2] = 0
+                goal_angles[3] = 0
+                goal_angles[4] = 1000
+                goal_angles[5] = 800
+                goal_angles_msg.position = [angle for angle in goal_angles]
+                self.pub_angles.publish(goal_angles_msg)
+                time.sleep(.5)
+                self.scooper_xtra_var = True
+            goal_angles[0] = 0
+            goal_angles[1] = 0
+            goal_angles[2] = 0
+            goal_angles[3] = 0
+            goal_angles[4] = 0
+            goal_angles[5] = 800
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            return goal_angles_msg
+
+        else:
+            goal_angles[0] = 0
+            goal_angles[1] = 0
+            goal_angles[2] = 0
+            goal_angles[3] = 0
+            goal_angles[4] = 1000
+            if self.scooper_xtra_var == False:
+                goal_angles[5] = 0
+            else:
+                goal_angles[5] = 800
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            return goal_angles_msg
+
+
+    def activate_drill_goal_angles(self, activate):
+        goal_angles_msg = JointState()
+        goal_angles = copy(self.prev_goal_angles)
+        if activate:
+            goal_angles[0] = 0
+            goal_angles[1] = 0
+            goal_angles[2] = 0
+            goal_angles[3] = 0
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            return goal_angles_msg
+        else:
+            goal_angles[0] = 0
+            goal_angles[1] = 0
+            goal_angles[2] = 0
+            goal_angles[3] = 1000
+            goal_angles_msg.position = [angle for angle in goal_angles]
+            return goal_angles_msg
+
 
     def _sub_callback_grasp_signal(self, data):
-        if data.data > self.grasp_treshold:
+        # self.grasped = True
+        if data.data > self.grasp_treshold and self.grasped is False:
             self.grasped = True
-        # else:
-            # self.grasped = False
-
+            msg = Bool()
+            msg.data = True
+            self.pub_grasp_state.publish(msg)
+            if self.mode == 'ajax':
+                self.pub_angles.publish(self.activate_ajax_goal_angles(False))
+            elif self.mode == 'scooper':
+                self.pub_angles.publish(self.activate_scooper_goal_angles(False))
+            elif self.mode == 'drill':
+                self.pub_angles.publish(self.activate_drill_goal_angles(False))
+            self.new_goal_received = False
 
     def _sub_callback_delta_cmd(self, data):
         self.absolute = False
@@ -106,9 +277,7 @@ class InspireController:
         if not self.first_goal_received:
             self.first_goal_received = True
 
-
     def _sub_callback_absolute_cmd(self, data):
-        
         self.absolute = True
         goal_angles = data.position
         if not self.first_goal_received:
@@ -116,13 +285,9 @@ class InspireController:
         goal_angles_msg = JointState()
 
         goal_angles_msg.position = [angle for angle in goal_angles]
-        # print(f"ABS===================self.angle_act: {goal_angles}")
 
         self.pub_angles.publish(goal_angles_msg)
 
-
-
-    
     def run(self):
         try:
             rospy.spin()
@@ -131,9 +296,11 @@ class InspireController:
         finally:
             rospy.loginfo(f"{self.node_name}: Terminated.")
 
-
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Controller used with plant interface")
+    parser.add_argument("mode", type=str, help="Name of the object to grasp")
+    args = parser.parse_args()
+
     node_name = 'inspire_controller'
-    inspire_controller = InspireController()
+    inspire_controller = InspireController(args)
     inspire_controller.run()

@@ -24,11 +24,23 @@ ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
 # List of scripts
 scripts = {
     "roscore": f"roscore",
-    "Plant Interface": f"python {SCRIPTS_DIR}/plant_interface.py",
+    "Plant Interface Ajax": f"python3 {SCRIPTS_DIR}/plant_interface.py ajax",
+    "Plant Interface Scooper": f"python3 {SCRIPTS_DIR}/plant_interface.py scooper",
+    "Plant Interface Drill": f"python3 {SCRIPTS_DIR}/plant_interface.py drill",
+    "Button Server": f"python3 {SCRIPTS_DIR}/button_server.py",
+    "Webcam": f"rosrun usb_cam usb_cam_node \
+                _video_device:=/dev/video0 \
+                _image_width:=640 \
+                _image_height:=480 \
+                _pixel_format:=yuyv \
+                _camera_frame_id:=usb_cam_1 \
+                _focus_auto:=0 \
+                _focus_absolute:=30 \
+                usb_cam/image_raw:=wrist_camera/image_raw",
     "Hardware Controller": f"roslaunch inspire_hand hand_control.launch",
     "Controller Topic Interface": f"roslaunch inspire_hand_topic_interface hand_control.launch",
-    "Teleoperation": f"python {SCRIPTS_DIR}/teleop.py",
-    "Motion Retargetting": f"python {SCRIPTS_DIR}/motion_retargetting.py",
+    "Teleoperation": f"python3 {SCRIPTS_DIR}/teleop.py",
+    "Motion Retargetting": f"python3 {SCRIPTS_DIR}/motion_retargetting.py",
     "TCP Endpoint": f"roslaunch ros_tcp_endpoint endpoint.launch tcp_ip:={args.ip} tcp_port:=10000",
 }
 

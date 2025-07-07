@@ -9,3 +9,4 @@ opencv-python
 catkin-pkg
 empy==3.3.4
 wheel
+flask
