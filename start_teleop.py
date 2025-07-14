@@ -24,19 +24,9 @@ ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
 # List of scripts
 scripts = {
     "roscore": f"roscore",
-    "Plant Interface Ajax": f"python3 {SCRIPTS_DIR}/plant_interface.py ajax",
-    "Plant Interface Scooper": f"python3 {SCRIPTS_DIR}/plant_interface.py scooper",
-    "Plant Interface Drill": f"python3 {SCRIPTS_DIR}/plant_interface.py drill",
+    "Main Controller": f"python3 {SCRIPTS_DIR}/plant_interface_mode.py",
     "Button Server": f"python3 {SCRIPTS_DIR}/button_server.py",
-    "Webcam": f"rosrun usb_cam usb_cam_node \
-                _video_device:=/dev/video0 \
-                _image_width:=640 \
-                _image_height:=480 \
-                _pixel_format:=yuyv \
-                _camera_frame_id:=usb_cam_1 \
-                _focus_auto:=0 \
-                _focus_absolute:=30 \
-                usb_cam/image_raw:=wrist_camera/image_raw",
+    "Webcam": f"python3 {SCRIPTS_DIR}/wrist_cam_autodetect.py",
     "Hardware Controller": f"roslaunch inspire_hand hand_control.launch",
     "Controller Topic Interface": f"roslaunch inspire_hand_topic_interface hand_control.launch",
     "Teleoperation": f"python3 {SCRIPTS_DIR}/teleop.py",
