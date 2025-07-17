@@ -16,7 +16,9 @@ class InspireController:
 
         rospy.Subscriber('/kth_franka_plant/in/inspire_cmd', JointState, self._sub_callback_delta_cmd, queue_size=1)
         rospy.Subscriber('/kth_franka_plant/in/grasp_signal', Float32, self._sub_callback_grasp_signal, queue_size=1)
-        rospy.Subscriber('/kth_franka_plant/in/mode_signal', Float32, self._sub_callback_mode_signal, queue_size=1)
+        rospy.Subscriber('/kth_franka_plant/in/index_signal', Float32, self._sub_callback_index_signal, queue_size=1)
+        rospy.Subscriber('/kth_franka_plant/in/index_middle_signal', Float32, self._sub_callback_index_middle_signal, queue_size=1)
+        rospy.Subscriber('/kth_franka_plant/in/thumb_signal', Float32, self._sub_callback_thumb_signal, queue_size=1)
         rospy.Subscriber('/activate_button', Bool, self._sub_callback_activate_button, queue_size=1)
         rospy.Subscriber('/release_button', Bool, self._sub_callback_release_button, queue_size=1)
         rospy.Subscriber('/quest/noding_gesture', Bool, self._sub_callback_nodding_gesture, queue_size=1)
@@ -34,7 +36,7 @@ class InspireController:
         self.mode = 'index'
         self.thumb_xtra_var = False
         self.mode_tresholds = [0.33, 0.66, 1.0]
-        self.mode_tolerance = 0.1
+        self.finger_signal_tolerance = 0.5
 
         if self.mode == 'index_middle':
             self.grasp_treshold = 0.8
@@ -274,15 +276,20 @@ class InspireController:
             self.new_goal_received = False
 
 
-    def _sub_callback_mode_signal(self, data):
-        mode_signal = data.data
-        print(f"mode_signal = {mode_signal}")
-        if mode_signal > self.mode_tresholds[0] - self.mode_tolerance and mode_signal < self.mode_tresholds[0] + self.mode_tolerance:
-            self.mode = 'thumb'
-        if mode_signal > self.mode_tresholds[1] - self.mode_tolerance and mode_signal < self.mode_tresholds[1] + self.mode_tolerance:
+    def _sub_callback_index_signal(self, data):
+        if data.data > self.finger_signal_tolerance:
             self.mode = 'index'
-        if mode_signal > self.mode_tresholds[2] - self.mode_tolerance and mode_signal < self.mode_tresholds[2] + self.mode_tolerance:
+
+    def _sub_callback_index_middle_signal(self, data):
+        if data.data > self.finger_signal_tolerance:
             self.mode = 'index_middle'
+
+    def _sub_callback_thumb_signal(self, data):
+        if data.data > self.finger_signal_tolerance:
+            self.mode = 'thumb'
+
+
+            
 
 
     def _sub_callback_delta_cmd(self, data):

@@ -24,7 +24,7 @@ ACTIVATE_ENV = f"source {VENV_PATH} && source {DEVEL_SETUP}"
 # List of scripts
 scripts = {
     "roscore": f"roscore",
-    "Main Controller": f"python3 {SCRIPTS_DIR}/plant_interface_mode.py",
+    "Main Controller": f"python3 {SCRIPTS_DIR}/controller.py",
     "Button Server": f"python3 {SCRIPTS_DIR}/button_server.py",
     "Webcam": f"python3 {SCRIPTS_DIR}/wrist_cam_autodetect.py",
     "Hardware Controller": f"roslaunch inspire_hand hand_control.launch",
