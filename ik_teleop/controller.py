@@ -270,7 +270,7 @@ class InspireController:
             msg = Bool()
             msg.data = True
             self.pub_grasp_state.publish(msg)
-            # time.sleep(.5)
+            time.sleep(.5)
             if self.mode == 'index_middle':
                 self.pub_angles.publish(self.activate_index_middle_goal_angles(False))
             elif self.mode == 'thumb':
