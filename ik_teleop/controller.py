@@ -36,7 +36,10 @@ class InspireController:
         self.mode = 'index'
         self.thumb_xtra_var = False
         self.mode_tresholds = [0.33, 0.66, 1.0]
-        self.finger_signal_tolerance = 0.5
+        self.finger_signal_tolerance = 0.8
+        self.index_signal = 0.0
+        self.index_middle_signal = 0.0
+        self.thumb_signal = 0.0
 
         if self.mode == 'index_middle':
             self.grasp_treshold = 0.8
@@ -267,6 +270,7 @@ class InspireController:
             msg = Bool()
             msg.data = True
             self.pub_grasp_state.publish(msg)
+            # time.sleep(.5)
             if self.mode == 'index_middle':
                 self.pub_angles.publish(self.activate_index_middle_goal_angles(False))
             elif self.mode == 'thumb':
@@ -277,15 +281,18 @@ class InspireController:
 
 
     def _sub_callback_index_signal(self, data):
-        if data.data > self.finger_signal_tolerance:
+        self.index_signal = data.data
+        if self.index_signal > self.index_middle_signal and self.index_signal > self.thumb_signal:
             self.mode = 'index'
 
     def _sub_callback_index_middle_signal(self, data):
-        if data.data > self.finger_signal_tolerance:
+        self.index_middle_signal = data.data
+        if self.index_middle_signal > self.index_signal and self.index_middle_signal > self.thumb_signal:
             self.mode = 'index_middle'
 
     def _sub_callback_thumb_signal(self, data):
-        if data.data > self.finger_signal_tolerance:
+        self.thumb_signal = data.data
+        if self.thumb_signal > self.index_middle_signal and self.thumb_signal > self.index_signal:
             self.mode = 'thumb'
 
 
