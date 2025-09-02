@@ -55,6 +55,7 @@ class InspireController:
     def home_robot(self):
         #              little  ring    middle  index   t.flex  t.rotate
         goal_angles = [1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 0.0]
+        # goal_angles = [600.0, 800.0, 900.0, 900.0, 500.0, 0.0]
         goal_angles_msg = JointState()
         goal_angles_msg.position = [angle for angle in goal_angles]
         while self.pub_angles.get_num_connections() == 0 and not rospy.is_shutdown():
@@ -134,7 +135,7 @@ class InspireController:
             self.prev_goal_angles = goal_angles
             goal_angles_msg = JointState()
             goal_angles_msg.position = [angle for angle in goal_angles]
-            for _ in range(30):  # 10 Hz * 3 seconds = 30 iterations
+            for _ in range(20):  # 10 Hz * 3 seconds = 30 iterations
                 self.pub_angles.publish(goal_angles_msg)
                 time.sleep(0.1)  # 1 / 10 Hz
             self.new_goal_received = False
@@ -177,7 +178,7 @@ class InspireController:
             self.prev_goal_angles = goal_angles
             goal_angles_msg = JointState()
             goal_angles_msg.position = [angle for angle in goal_angles]
-            for _ in range(30):  # 10 Hz * 3 seconds = 30 iterations
+            for _ in range(10):  # 10 Hz * 1 seconds = 10 iterations
                 self.pub_angles.publish(goal_angles_msg)
                 time.sleep(0.1)  # 1 / 10 Hz
             self.new_goal_received = False
